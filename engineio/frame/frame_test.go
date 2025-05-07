@@ -1,0 +1,25 @@
+package frame
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestFrameType(t *testing.T) {
+	at := assert.New(t)
+	tests := []struct {
+		b   byte
+		typ Type
+		out byte
+	}{
+		{0, String, 0},
+		{1, Binary, 1},
+	}
+
+	for _, test := range tests {
+		typ := ByteToFrameType(test.b)
+		at.Equal(test.typ, typ)
+		at.Equal(test.out, typ.Byte())
+	}
+}
