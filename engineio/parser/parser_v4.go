@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"bytes"
 	"encoding/base64"
 	"fmt"
 	"go-socket.io/engineio/frame"
@@ -35,20 +36,33 @@ func (p v4) EncodePacket(pack packet.Packet[any], supportsBinary bool, callback 
 }
 
 func (p v4) EncodePayload(packets []packet.Packet[any], supportsBinary bool, callback EncodeCallback[any]) {
-	encodedPackets := make([]string, len(packets))
+	encoded := bytes.Buffer{}
 	for i, pack := range packets {
 		// force base64 encoding for binary packets
-		p.EncodePacket(pack, false, func(data interface{}) {
-			encodedPackets[i] = data.(string)
+		p.EncodePacket(pack, supportsBinary, func(data interface{}) {
+			switch data.(type) {
+			case string:
+				encoded.WriteString(data.(string))
+			case []byte:
+				encoded.Write(data.([]byte))
+			default:
+				panic("unsupported data type")
+			}
 		})
+		if i < len(packets)-1 {
+			encoded.WriteByte(30)
+		}
 	}
-	callback(strings.Join(encodedPackets, RecordSeparator))
+	if supportsBinary {
+		callback(encoded.Bytes())
+	} else {
+		callback(encoded.String())
+	}
 }
 
 func (p v4) DecodePacket(data any) packet.Packet[any] {
 	result := packet.Packet[any]{Type: packet.MESSAGE}
 	if data == nil {
-		result.Data = data
 		return result
 	}
 	switch d := data.(type) {
@@ -75,9 +89,6 @@ func (p v4) DecodePayload(data any, callback DecodePayloadCallback[any]) {
 		for _, encodedPacket := range encodedPackets {
 			pack := p.DecodePacket(encodedPacket)
 			packets = append(packets, pack)
-			//if packet.Type == ERROR {
-			//	break
-			//}
 		}
 	} else {
 		panic("data must be a string")
