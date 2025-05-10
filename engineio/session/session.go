@@ -1,11 +1,7 @@
 package session
 
 import (
-	"go-socket.io/engineio/frame"
-	"go-socket.io/engineio/packet"
 	"go-socket.io/engineio/transport"
-	"go-socket.io/logger"
-	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -75,85 +71,6 @@ func (s *Session) Close() error {
 	return s.conn.Close()
 }
 
-// NextReader attempts to obtain a ReadCloser from the session's connection.
-// When finished writing, the caller MUST Close the ReadCloser to unlock the
-// connection's FramerReader.
-func (s *Session) NextReader() (FrameType, io.ReadCloser, error) {
-	for {
-		ft, pt, r, err := s.nextReader()
-		if err != nil {
-			if closeErr := s.Close(); closeErr != nil {
-				logger.Error("close session after next reader:", closeErr)
-			}
-
-			return 0, nil, err
-		}
-
-		switch pt {
-		case packet.PING:
-			// Respond to a ping with a pong.
-			//err := func() error {
-			//	w, err := s.nextWriter(ft, packet.PONG)
-			//	if err != nil {
-			//		return err
-			//	}
-			//	// echo
-			//	_, err = io.Copy(w, r)
-			//	// unlocks the wrapped connection's FrameWriter
-			//	if closeErr := w.Close(); closeErr != nil {
-			//		logger.Error("close writer after write pong packet:", closeErr)
-			//	}
-			//
-			//	// unlocks the wrapped connection's FrameReader
-			//	if closeErr := r.Close(); closeErr != nil {
-			//		logger.Error("close reader:", closeErr)
-			//	}
-			//
-			//	return err
-			//}()
-
-			//if err != nil {
-			//	if closeErr := s.Close(); closeErr != nil {
-			//		logger.Error("close session:", closeErr)
-			//	}
-			//
-			//	return 0, nil, err
-			//}
-			//// Read another frame.
-			//if err := s.setDeadline(); err != nil {
-			//	if closeErr := s.Close(); closeErr != nil {
-			//		logger.Error("close session after set deadline:", closeErr)
-			//	}
-			//
-			//	return 0, nil, err
-			//}
-
-		case packet.CLOSE:
-			// unlocks the wrapped connection's FrameReader
-			if err = r.Close(); err != nil {
-				logger.Error("close reader on packet close:", err)
-			}
-
-			if err = s.Close(); err != nil {
-				logger.Error("close session on packet close:", err)
-			}
-
-			return 0, nil, io.EOF
-
-		case packet.MESSAGE:
-			// Caller must Close the ReadCloser to unlock the connection's
-			// FrameReader when finished reading.
-			return FrameType(ft), r, nil
-
-		default:
-			// Unknown packet type. Close reader and try again.
-			if err = r.Close(); err != nil {
-				logger.Error("close reader on unknown packet:", err)
-			}
-		}
-	}
-}
-
 func (s *Session) URL() url.URL {
 	s.upgradeLocker.RLock()
 	defer s.upgradeLocker.RUnlock()
@@ -180,14 +97,6 @@ func (s *Session) RemoteHeader() http.Header {
 	defer s.upgradeLocker.RUnlock()
 
 	return s.conn.RemoteHeader()
-}
-
-// NextWriter attempts to obtain a WriteCloser from the session's connection.
-// When finished writing, the caller MUST Close the WriteCloser to unlock the
-// connection's FrameWriter.
-func (s *Session) NextWriter(typ FrameType) (io.WriteCloser, error) {
-	//return s.nextWriter(frame.Type(typ), packet.MESSAGE)
-	return nil, nil
 }
 
 func (s *Session) Upgrade(transport string, conn transport.Conn) {
@@ -235,44 +144,6 @@ func (s *Session) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if h, ok := conn.(http.Handler); ok {
 		h.ServeHTTP(w, r)
 	}
-}
-
-func (s *Session) nextReader() (frame.Type, packet.Type, io.ReadCloser, error) {
-	//for {
-	//	s.upgradeLocker.RLock()
-	//	conn := s.conn
-	//	s.upgradeLocker.RUnlock()
-	//
-	//	ft, pt, r, err := conn.NextReader()
-	//	if err != nil {
-	//		//if op, ok := err.(payload.Error); ok && op.Temporary() {
-	//		//	continue
-	//		//}
-	//		return 0, 0, nil, err
-	//	1
-	//	return ft, pt, r, nil
-	//}
-	return 0, 0, nil, nil
-}
-
-func (s *Session) nextWriter(ft frame.Type, pt packet.Type) (io.WriteCloser, error) {
-	//for {
-	//s.upgradeLocker.RLock()
-	//conn := s.conn
-	//s.upgradeLocker.RUnlock()
-
-	//w, err := conn.NextWriter(ft, pt)
-	//if err != nil {
-	//	//if op, ok := err.(payload.Error); ok && op.Temporary() {
-	//	//	continue
-	//	//}
-	//	return nil, err
-	//}
-	// Caller must Close the WriteCloser to unlock the connection's
-	// FrameWriter when finished writing.
-	//return w, nil
-	//}
-	return nil, nil
 }
 
 func (s *Session) setDeadline() error {

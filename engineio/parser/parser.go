@@ -1,19 +1,30 @@
 package parser
 
-import "go-socket.io/engineio/packet"
+import (
+	"bytes"
+	"go-socket.io/engineio/protocol"
+)
 
-type EncodeCallback[T string | []byte | any] = func(data T)
+type decodeOpts struct {
+	payloadType protocol.PayloadType
+}
 
-type DecodePayloadCallback[T string | []byte | any] = func(packet packet.Packet[T], index, total int) bool
+type DecodeOptions func(*decodeOpts)
 
-type Parser interface {
+type Parser[Data string | []byte] interface {
 	GetProtocolVersion() int
 
-	EncodePacket(pack packet.Packet[any], supportsBinary bool, callback EncodeCallback[any])
+	EncodePacket(packet protocol.EnginePacket, supportsBinary bool) []byte
 
-	EncodePayload(packets []packet.Packet[any], supportsBinary bool, callback EncodeCallback[any])
+	EncodePayload(packets []protocol.EnginePacket, supportsBinary bool) bytes.Buffer
 
-	DecodePacket(data any) packet.Packet[any]
+	DecodePacket(data any, opts ...DecodeOptions) protocol.EnginePacket
 
-	DecodePayload(data any, callback DecodePayloadCallback[any])
+	DecodePayload(data any, opts ...DecodeOptions) []protocol.EnginePacket
+}
+
+func WithPlaintextDecode() DecodeOptions {
+	return func(opts *decodeOpts) {
+		opts.payloadType = protocol.PayloadPlaintext
+	}
 }

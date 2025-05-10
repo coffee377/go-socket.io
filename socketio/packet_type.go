@@ -30,7 +30,7 @@ func (pt PacketType) String() string {
 	case Event:
 		return "EVENT"
 	case Ack:
-		return "pong"
+		return "ACK"
 	case ConnectError:
 		return "CONNECT_ERROR"
 	case BinaryEvent:

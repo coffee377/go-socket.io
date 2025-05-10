@@ -2,182 +2,190 @@ package parser
 
 import (
 	"bytes"
-	"encoding/base64"
+	"fmt"
 	"github.com/stretchr/testify/assert"
-	"go-socket.io/engineio/frame"
-	"go-socket.io/engineio/packet"
+	"go-socket.io/engineio/protocol"
 	"testing"
 )
 
-func expectedResult(supportsBinary bool, packets ...packet.Packet[any]) bytes.Buffer {
-	var expected bytes.Buffer
+func expectedResult(supportsBinary bool, packets ...protocol.EnginePacket) bytes.Buffer {
+	var buf bytes.Buffer
 	for i, p := range packets {
-		switch d := p.Data.(type) {
-		case string:
-			expected.WriteByte(p.Type.StringByte())
-			expected.WriteString(d)
-		case []byte:
-			if supportsBinary {
-				expected.Write(d)
-			} else {
-				expected.WriteString("b")
-				expected.WriteString(base64.StdEncoding.EncodeToString(d))
-			}
-		}
+		encode(&buf, p, supportsBinary)
 		if i < len(packets)-1 {
-			expected.WriteString(RecordSeparator)
+			buf.WriteByte(V4RecordSeparator)
 		}
 	}
-	return expected
+	return buf
 }
 
 func TestV4_GetProtocolVersion(t *testing.T) {
-	assert.Equal(t, 4, ProtocolV4.GetProtocolVersion())
+	assert.Equal(t, protocol.V4.Value(), ProtocolV4.GetProtocolVersion())
 }
 
 func TestV4_EncodePacketString(t *testing.T) {
-	pack := packet.Packet[any]{Type: packet.MESSAGE}
+	packet := protocol.Packet()
 
-	pack.Data = "Hello World"
-	ProtocolV4.EncodePacket(pack, false, func(data interface{}) {
-		expected := expectedResult(false, pack)
-		assert.Equal(t, expected.String(), data)
-	})
+	packet.Payload("Hello World")
+	expected := expectedResult(false, packet)
+	data := ProtocolV4.EncodePacket(packet, false)
+	assert.Equal(t, expected.String(), string(data))
 
-	pack.Data = "Engine.IO"
-	ProtocolV4.EncodePacket(pack, false, func(data interface{}) {
-		expected := expectedResult(false, pack)
-		assert.Equal(t, expected.String(), data)
-	})
+	packet.Payload("Engine.IO")
+	data = ProtocolV4.EncodePacket(packet, false)
+	expected = expectedResult(false, packet)
+	assert.Equal(t, expected.String(), string(data))
 }
 
 func TestV4_EncodePacketBinary(t *testing.T) {
 	// 72 101 108 108 111 44 32 87 111 114 108 100 33
-	pack := packet.Packet[any]{Type: packet.MESSAGE, Data: []byte("Hello, World!")}
-	ProtocolV4.EncodePacket(pack, true, func(data interface{}) {
-		expected := expectedResult(true, pack)
-		assert.Equal(t, expected.Bytes(), data)
-	})
+	packet := protocol.Packet(protocol.WithPayload([]byte("Hello, World!")))
+	encodePacket := ProtocolV4.EncodePacket(packet, true)
+	expected := expectedResult(true, packet)
+	assert.Equal(t, expected.Bytes(), encodePacket)
 }
 
 func TestV4_EncodePacketBase64(t *testing.T) {
-	pack := packet.Packet[any]{Type: packet.MESSAGE, Data: []byte("Hello, World!")}
-	ProtocolV4.EncodePacket(pack, false, func(data interface{}) {
-		expected := expectedResult(false, pack)
-		assert.Equal(t, expected.String(), data)
-	})
+	packet := protocol.Packet(protocol.WithPayload([]byte("Hello, World!")))
+	encodePacket := ProtocolV4.EncodePacket(packet, false)
+	expected := expectedResult(false, packet)
+	assert.Equal(t, expected.Bytes(), encodePacket)
 }
 
 func TestV4_EncodePayloadStringEmpty(t *testing.T) {
-	var packets []packet.Packet[any]
-	ProtocolV4.EncodePayload(packets, false, func(data interface{}) {
-		expected := expectedResult(false, packets...)
-		assert.Equal(t, expected.String(), data)
-	})
+	var packets []protocol.EnginePacket
+	payload := ProtocolV4.EncodePayload(packets, false)
+	expected := expectedResult(false, packets...)
+	assert.Equal(t, expected.String(), payload.String())
+	assert.Equal(t, expected.Bytes(), payload.Bytes())
 }
 
 func TestV4_EncodePayloadString(t *testing.T) {
-	packets := []packet.Packet[any]{
-		{Type: packet.MESSAGE, Data: "Engine.IO"},
-		{Type: packet.MESSAGE, Data: "Test.Data"},
+	packets := []protocol.EnginePacket{
+		protocol.Packet(protocol.WithPayload("Engine.IO")),
+		protocol.Packet(protocol.WithPayload("Test.Data")),
 	}
+	payload := ProtocolV4.EncodePayload(packets, false)
 	expected := expectedResult(false, packets...)
-	ProtocolV4.EncodePayload(packets, false, func(data interface{}) {
-		assert.Equal(t, expected.String(), data)
-	})
+	assert.Equal(t, expected.String(), payload.String())
+	assert.Equal(t, expected.Bytes(), payload.Bytes())
 }
 
 func TestV4_EncodePayloadBinary(t *testing.T) {
-	packets := []packet.Packet[any]{
-		{Type: packet.MESSAGE, Data: []byte("Engine.IO")},
-		{Type: packet.MESSAGE, Data: []byte("Test.Data")},
+	packets := []protocol.EnginePacket{
+		protocol.Packet(protocol.WithPayload([]byte("Engine.IO"))),
+		protocol.Packet(protocol.WithPayload([]byte("Test.Data"))),
 	}
 	expected := expectedResult(true, packets...)
-
-	ProtocolV4.EncodePayload(packets, true, func(data interface{}) {
-		assert.Equal(t, expected.Bytes(), data)
-	})
+	payload := ProtocolV4.EncodePayload(packets, true)
+	assert.Equal(t, expected.Bytes(), payload.Bytes())
+	assert.Equal(t, expected.String(), payload.String())
 }
 
 func TestV4_EncodePayloadBinaryMixed(t *testing.T) {
-	packets := []packet.Packet[any]{
-		{Type: packet.MESSAGE, Data: []byte("Engine.IO")},
-		{Type: packet.MESSAGE, Data: "Test.Data"},
+	packets := []protocol.EnginePacket{
+		protocol.Packet(protocol.WithPayload([]byte("Engine.IO"))),
+		protocol.Packet(protocol.WithPayload("Test.Data")),
 	}
-	expected := expectedResult(false, packets...)
-
-	ProtocolV4.EncodePayload(packets, false, func(data interface{}) {
-		assert.Equal(t, expected.String(), data)
-	})
+	expected := expectedResult(true, packets...)
+	payload := ProtocolV4.EncodePayload(packets, true)
+	assert.Equal(t, expected.String(), payload.String())
+	assert.Equal(t, expected.Bytes(), payload.Bytes())
 }
 
 func TestV4_EncodePayloadBase64(t *testing.T) {
-	packets := []packet.Packet[any]{
-		{Type: packet.MESSAGE, Data: []byte("Engine.IO")},
-		{Type: packet.MESSAGE, Data: []byte("Test.Data")},
+	packets := []protocol.EnginePacket{
+		protocol.Packet(protocol.WithPayload([]byte("Engine.IO"))),
+		protocol.Packet(protocol.WithPayload([]byte("Test.Data"))),
 	}
 	expected := expectedResult(false, packets...)
-
-	ProtocolV4.EncodePayload(packets, false, func(data interface{}) {
-		assert.Equal(t, expected.String(), data)
-	})
+	payload := ProtocolV4.EncodePayload(packets, false)
+	assert.Equal(t, expected.String(), payload.String())
+	assert.Equal(t, expected.Bytes(), payload.Bytes())
 }
 
 func TestV4_EncodePayloadBase64Mixed(t *testing.T) {
-	packets := []packet.Packet[any]{
-		{Type: packet.MESSAGE, Data: []byte("Engine.IO")},
-		{Type: packet.MESSAGE, Data: "Test.Data"},
+	packets := []protocol.EnginePacket{
+		protocol.Packet(protocol.WithPayload([]byte("Engine.IO"))),
+		protocol.Packet(protocol.WithPayload("Test.Data")),
 	}
 	expected := expectedResult(false, packets...)
-
-	ProtocolV4.EncodePayload(packets, false, func(data interface{}) {
-		assert.Equal(t, expected.String(), data)
-	})
-}
-
-func TestV4_DecodePacket(t *testing.T) {
-	//packetOriginal := packet.Packet[any]{Type: packet.MESSAGE, Data: "Engine.IO"}
-	//ProtocolV4.EncodePacket(packetOriginal, false, func(data interface{}) {
-	//	packetDecoded := ProtocolV4.DecodePacket(data)
-	//	assert.Equal(t, packetOriginal.Type, packetDecoded.Type)
-	//	assert.Equal(t, packetOriginal.Data, packetDecoded.Data)
-	//})
-	types := []string{"0", "1", "2", "3", "4", "5", "6"}
-	for _, ty := range types {
-		packetDecoded := ProtocolV4.DecodePacket(ty)
-		assert.Equal(t, packet.ByteToPacketType(ty[0], frame.String), packetDecoded.Type)
-	}
+	payload := ProtocolV4.EncodePayload(packets, false)
+	assert.Equal(t, expected.String(), payload.String())
+	assert.Equal(t, expected.Bytes(), payload.Bytes())
 }
 
 func TestV4_DecodePacketNull(t *testing.T) {
-	decodePacket := ProtocolV4.DecodePacket(nil)
-	assert.Equal(t, packet.MESSAGE, decodePacket.Type)
-	assert.Nil(t, decodePacket.Data)
+	packet := ProtocolV4.DecodePacket(nil)
+	assert.Nil(t, packet)
+}
+
+func TestV4_DecodePacket(t *testing.T) {
+	pts := []protocol.PacketType{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6}
+	for _, pt := range pts {
+		data := fmt.Sprintf("%d", pt)
+		decodePacket := ProtocolV4.DecodePacket(data)
+		assert.Equal(t, protocol.ByteToPacketType(pt.Byte()), decodePacket.GetType())
+		p := decodePacket.GetPayload()
+		if p == nil {
+			assert.Nil(t, p)
+			continue
+		}
+	}
 }
 
 func TestV4_DecodePacketString(t *testing.T) {
-	packetOriginal := packet.Packet[any]{Type: packet.MESSAGE, Data: "Engine.IO"}
-	ProtocolV4.EncodePacket(packetOriginal, false, func(data interface{}) {
-		packetDecoded := ProtocolV4.DecodePacket(data)
-		assert.Equal(t, packetOriginal.Type, packetDecoded.Type)
-		assert.Equal(t, packetOriginal.Data, packetDecoded.Data)
-	})
+	packetOriginal := protocol.Packet(protocol.WithPayload("Engine.IO"))
+	encoded := ProtocolV4.EncodePacket(packetOriginal, false)
+	packet := ProtocolV4.DecodePacket(encoded)
+	assert.Equal(t, packetOriginal.GetType(), packet.GetType())
+
+	payload := packet.GetPayload()
+	if payload == nil {
+		assert.Nil(t, payload)
+	}
+	switch payload.(type) {
+	case string:
+		assert.Equal(t, packetOriginal.GetPayload(), payload.(string))
+	case []byte:
+		assert.Equal(t, packetOriginal.GetPayload(), string(payload.([]byte)))
+	}
 }
 
 func TestV4_DecodePacketBinary(t *testing.T) {
-	packetOriginal := packet.Packet[any]{Type: packet.MESSAGE, Data: []byte("Engine.IO")}
-	ProtocolV4.EncodePacket(packetOriginal, true, func(data interface{}) {
-		packetDecoded := ProtocolV4.DecodePacket(data)
-		assert.Equal(t, packetOriginal.Type, packetDecoded.Type)
-		assert.Equal(t, packetOriginal.Data, packetDecoded.Data)
-	})
+	packetOriginal := protocol.Packet(protocol.WithPayload([]byte("Engine.IO")))
+	encoded := ProtocolV4.EncodePacket(packetOriginal, false)
+	packet := ProtocolV4.DecodePacket(encoded)
+	assert.Equal(t, packetOriginal.GetType(), packet.GetType())
+
+	payload := packet.GetPayload()
+	if payload == nil {
+		assert.Nil(t, payload)
+	}
+	switch payload.(type) {
+	case string:
+		assert.Equal(t, packetOriginal.GetPayload(), payload.(string))
+	case []byte:
+		assert.Equal(t, packetOriginal.GetPayload(), payload.([]byte))
+	}
 }
 
 func TestV4_DecodePacketBase64(t *testing.T) {
-	packetOriginal := packet.Packet[any]{Type: packet.MESSAGE, Data: []byte("Engine.IO")}
-	ProtocolV4.EncodePacket(packetOriginal, false, func(data interface{}) {
-		packetDecoded := ProtocolV4.DecodePacket(data)
-		assert.Equal(t, packetOriginal.Type, packetDecoded.Type)
-		assert.Equal(t, "Engine.IO", packetDecoded.Data)
-	})
+	data := "Engine.IO"
+	packetOriginal := protocol.Packet(protocol.WithPayload(data))
+	encoded := ProtocolV4.EncodePacket(packetOriginal, false)
+	packet := ProtocolV4.DecodePacket(encoded, WithPlaintextDecode())
+	assert.Equal(t, packetOriginal.GetType(), packet.GetType())
+	assert.Equal(t, data, packet.GetPayload())
+}
+
+func Test_split(t *testing.T) {
+	testData := []byte{30, 1, 2, 30, 30}
+	rds := splitData(testData, V4RecordSeparator)
+	for i, r := range rds {
+		fmt.Printf("%d => %v\n", i, r)
+	}
+	assert.Equal(t, []byte{1, 2}, rds[0])
+	assert.Equal(t, cap(rds), 4)
+	assert.Equal(t, len(rds), 1)
 }

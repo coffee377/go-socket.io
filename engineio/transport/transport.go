@@ -8,20 +8,8 @@ import (
 	"time"
 )
 
-//// FrameReader reads a frame. It needs be closed before next reading.
-//type FrameReader interface {
-//	NextReader() (frame.Type, packet.Type, io.ReadCloser, error)
-//}
-//
-//// FrameWriter writes a frame. It needs be closed before next writing.
-//type FrameWriter interface {
-//	NextWriter(ft frame.Type, pt packet.Type) (io.WriteCloser, error)
-//}
-
 // Conn is a transport connection.
 type Conn interface {
-	//FrameReader
-	//FrameWriter
 	io.Closer
 	URL() url.URL
 	LocalAddr() net.Addr

@@ -1,12 +1,9 @@
 package main
 
 import (
-	"go-socket.io/engineio"
-	"go-socket.io/logger"
 	"io"
 	"log"
 	"net"
-	"net/http"
 	"sync"
 )
 
@@ -188,14 +185,4 @@ func (h *EchoHandler) ChannelRead(ctx ChannelHandlerContext, data []byte) {
 // Write 处理写事件
 func (h *EchoHandler) Write(ctx ChannelHandlerContext, data []byte) {
 	ctx.Write(data)
-}
-
-func main() {
-	s := engineio.NewServer(nil)
-	defer s.Shutdown()
-	http.Handle("/socket.io/", s)
-	http.Handle("/", http.FileServer(http.Dir("./asset")))
-
-	logger.Info("Serving at localhost:8000...")
-	log.Fatal(http.ListenAndServe(":8000", nil))
 }
