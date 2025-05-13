@@ -57,78 +57,78 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	params, _ := json.Marshal(query)
 	logger.Debug(fmt.Sprintf("request: %s", string(params)))
 
-	reqTransport := query.Get("transport")
-	//if reqTransport != "polling" {
-	//	s.sendErrorMessage(w, UnknownTransport, http.StatusBadRequest)
+	//reqTransport := query.Get("transport")
+	////if reqTransport != "polling" {
+	////	s.sendErrorMessage(w, UnknownTransport, http.StatusBadRequest)
+	////	return
+	////}
+	//
+	////sid := query.Get("sid")
+	//
+	//srvTransport, ok := s.transports.Get(reqTransport)
+	//if !ok {
+	//	invalidTransport := fmt.Sprintf("invalid transport: %s", reqTransport)
+	//	logger.Warn(invalidTransport)
+	//	http.Error(w, invalidTransport, http.StatusBadRequest)
 	//	return
 	//}
-
+	//
+	//header, err := s.requestChecker(r)
+	//if err != nil {
+	//	logger.Error("request checker err", err)
+	//	http.Error(w, fmt.Sprintf("request checker err: %s", err.Error()), http.StatusBadGateway)
+	//	return
+	//}
+	//
+	//for k, v := range header {
+	//	w.Header()[k] = v
+	//}
+	//
 	//sid := query.Get("sid")
-
-	srvTransport, ok := s.transports.Get(reqTransport)
-	if !ok {
-		invalidTransport := fmt.Sprintf("invalid transport: %s", reqTransport)
-		logger.Warn(invalidTransport)
-		http.Error(w, invalidTransport, http.StatusBadRequest)
-		return
-	}
-
-	header, err := s.requestChecker(r)
-	if err != nil {
-		logger.Error("request checker err", err)
-		http.Error(w, fmt.Sprintf("request checker err: %s", err.Error()), http.StatusBadGateway)
-		return
-	}
-
-	for k, v := range header {
-		w.Header()[k] = v
-	}
-
-	sid := query.Get("sid")
-	reqSession, ok := s.sessions.Get(sid)
-	// if we can't find session in current session pool, let's create this. behaviour for new connections
-	if !ok {
-		if sid != "" {
-			http.Error(w, fmt.Sprintf("invalid sid value: %s", sid), http.StatusBadRequest)
-			return
-		}
-
-		transportConn, err := srvTransport.Accept(w, r)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("transport accept err: %s", err.Error()), http.StatusBadGateway)
-			return
-		}
-
-		reqSession, err = s.newSession(r.Context(), transportConn, reqTransport)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("create new session err: %s", err.Error()), http.StatusBadRequest)
-			return
-		}
-
-		s.connInitiator(r, reqSession)
-	}
-
-	// try upgrade current connection
-	if reqSession.Transport() != reqTransport {
-		//	transportConn, err := srvTransport.Accept(w, r)
-		//	if err != nil {
-		//		// don't call http.Error() for HandshakeErrors because
-		//		// they get handled by the websocket library internally.
-		//		if _, ok := err.(websocket.HandshakeError); !ok {
-		//			http.Error(w, err.Error(), http.StatusBadGateway)
-		//		}
-		//		return
-		//	}
-		//
-		//	reqSession.Upgrade(reqTransport, transportConn)
-		//
-		//	if handler, ok := transportConn.(http.Handler); ok {
-		//		handler.ServeHTTP(w, r)
-		//	}
-		return
-	}
-
-	reqSession.ServeHTTP(w, r)
+	//reqSession, ok := s.sessions.Get(sid)
+	//// if we can't find session in current session pool, let's create this. behaviour for new connections
+	//if !ok {
+	//	if sid != "" {
+	//		http.Error(w, fmt.Sprintf("invalid sid value: %s", sid), http.StatusBadRequest)
+	//		return
+	//	}
+	//
+	//	transportConn, err := srvTransport.Accept(w, r)
+	//	if err != nil {
+	//		http.Error(w, fmt.Sprintf("transport accept err: %s", err.Error()), http.StatusBadGateway)
+	//		return
+	//	}
+	//
+	//	reqSession, err = s.newSession(r.Context(), transportConn, reqTransport)
+	//	if err != nil {
+	//		http.Error(w, fmt.Sprintf("create new session err: %s", err.Error()), http.StatusBadRequest)
+	//		return
+	//	}
+	//
+	//	s.connInitiator(r, reqSession)
+	//}
+	//
+	//// try upgrade current connection
+	//if reqSession.Transport() != reqTransport {
+	//	//	transportConn, err := srvTransport.Accept(w, r)
+	//	//	if err != nil {
+	//	//		// don't call http.Error() for HandshakeErrors because
+	//	//		// they get handled by the websocket library internally.
+	//	//		if _, ok := err.(websocket.HandshakeError); !ok {
+	//	//			http.Error(w, err.Error(), http.StatusBadGateway)
+	//	//		}
+	//	//		return
+	//	//	}
+	//	//
+	//	//	reqSession.Upgrade(reqTransport, transportConn)
+	//	//
+	//	//	if handler, ok := transportConn.(http.Handler); ok {
+	//	//		handler.ServeHTTP(w, r)
+	//	//	}
+	//	return
+	//}
+	//
+	//reqSession.ServeHTTP(w, r)
 }
 
 func (s *Server) Shutdown() {

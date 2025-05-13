@@ -10,16 +10,29 @@ type Listener interface {
 	call(args ...any)
 }
 
-// OnceListener 定义一次性事件监听器结构体
-type OnceListener struct {
+// onceListener 定义一次性事件监听器结构体
+type onceListener struct {
 	emitter Emitter
 	event   string
 	fn      Listener
 }
 
-func (once OnceListener) call(args ...any) {
+func (once onceListener) call(args ...any) {
 	once.emitter.OffListener(once.event, once)
 	once.fn.call(args)
+}
+
+type funcListener func(args ...any)
+
+func (f funcListener) call(args ...any) {
+	f(args...)
+}
+
+func WithListener(fn func(args ...any)) Listener {
+	var fl funcListener = func(args ...any) {
+		fn(args...)
+	}
+	return &fl
 }
 
 type Emitter interface {
@@ -33,21 +46,22 @@ type Emitter interface {
 	HasListeners(event string) bool
 }
 
-type emitter struct {
+type innerEmitter struct {
 	callbacks map[string][]Listener
 	mutex     sync.Mutex
 }
 
-// NewEmitter 创建一个新的 emitter 实例
+// NewEmitter 创建一个新的 innerEmitter 实例
 func NewEmitter() Emitter {
-	return &emitter{
+	return &innerEmitter{
 		callbacks: make(map[string][]Listener),
 	}
 }
 
-func (e *emitter) On(event string, listener Listener) Emitter {
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
+func (e *innerEmitter) On(event string, listener Listener) Emitter {
+	if e.mutex.TryLock() {
+		defer e.mutex.Unlock()
+	}
 	if _, ok := e.callbacks[event]; !ok {
 		e.callbacks[event] = []Listener{}
 	}
@@ -55,10 +69,10 @@ func (e *emitter) On(event string, listener Listener) Emitter {
 	return e
 }
 
-func (e *emitter) Once(event string, listener Listener) Emitter {
+func (e *innerEmitter) Once(event string, listener Listener) Emitter {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
-	e.On(event, OnceListener{
+	e.On(event, onceListener{
 		emitter: e,
 		event:   event,
 		fn:      listener,
@@ -66,9 +80,10 @@ func (e *emitter) Once(event string, listener Listener) Emitter {
 	return e
 }
 
-func (e *emitter) OffListener(event string, listener Listener) Emitter {
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
+func (e *innerEmitter) OffListener(event string, listener Listener) Emitter {
+	if e.mutex.TryLock() {
+		defer e.mutex.Unlock()
+	}
 	listeners, ok := e.callbacks[event]
 	if ok {
 		for i, call := range listeners {
@@ -82,21 +97,21 @@ func (e *emitter) OffListener(event string, listener Listener) Emitter {
 	return e
 }
 
-func (e *emitter) Off(event string) Emitter {
+func (e *innerEmitter) Off(event string) Emitter {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 	delete(e.callbacks, event)
 	return e
 }
 
-func (e *emitter) OffAll() Emitter {
+func (e *innerEmitter) OffAll() Emitter {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 	e.callbacks = make(map[string][]Listener)
 	return e
 }
 
-func (e *emitter) Emit(event string, args ...any) Emitter {
+func (e *innerEmitter) Emit(event string, args ...any) Emitter {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 	if listeners, ok := e.callbacks[event]; ok {
@@ -107,7 +122,7 @@ func (e *emitter) Emit(event string, args ...any) Emitter {
 	return e
 }
 
-func (e *emitter) Listeners(event string) []Listener {
+func (e *innerEmitter) Listeners(event string) []Listener {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 	var res []Listener
@@ -119,7 +134,7 @@ func (e *emitter) Listeners(event string) []Listener {
 	return res
 }
 
-func (e *emitter) HasListeners(event string) bool {
+func (e *innerEmitter) HasListeners(event string) bool {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 	if listeners, ok := e.callbacks[event]; ok {

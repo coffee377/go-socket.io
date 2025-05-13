@@ -11,7 +11,7 @@ type decodeOpts struct {
 
 type DecodeOptions func(*decodeOpts)
 
-type Parser[Data string | []byte] interface {
+type Parser interface {
 	GetProtocolVersion() int
 
 	EncodePacket(packet protocol.EnginePacket, supportsBinary bool) []byte
