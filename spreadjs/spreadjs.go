@@ -54,6 +54,18 @@ func cipher(s string) string {
 	return string(runes)
 }
 
+func decipher(s string) string {
+	runes := []rune(s)
+	change := func(r rune) rune {
+		return swapCaseAndShiftDigit(r, 1)
+	}
+	for i := 0; i <= len(runes)-5; i++ {
+		swap(runes, i, i+2, change)
+		swap(runes, i+1, i+3, change)
+	}
+	return string(runes)
+}
+
 func reverse(s string) string {
 	n := []rune(s)
 	for i, j := 0, len(n)-1; i < j; i, j = i+1, j-1 {
@@ -81,5 +93,22 @@ func decode(encryptedText string) []byte {
 }
 
 func encode(data []byte) []byte {
-	return nil
+	// 1. Base64 编码
+	encoded := base64.StdEncoding.EncodeToString(data)
+
+	// 2. 替换特殊字符
+	encoded = strings.Replace(encoded, "=", "#", 1)
+	encoded = strings.Replace(encoded, "==", "&", 1)
+
+	// 3. 交换字符串前后部分
+	l := (len(encoded) + 1) / 2
+	encoded = encoded[l:] + encoded[:l]
+
+	// 4. 反转字符串
+	encoded = reverse(encoded)
+
+	// 5. 应用 decipher 函数
+	encoded = decipher(encoded)
+
+	return []byte(encoded)
 }

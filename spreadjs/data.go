@@ -30,12 +30,13 @@ type Anl struct {
 
 type License interface {
 	Output(writer io.Writer) error
-	Read(lic, sep, prefix string) *SpreadJSLicense
+	Read(lic string) *SpreadJSLicense
 }
 
 type SpreadJSLicense struct {
-	ac        string
-	pk        string
+	//pk        string
+	prefix    string
+	sep       string
 	R         int    `json:"_r"`
 	H         string `json:"H"`
 	Signature string `json:"S"`
@@ -44,21 +45,24 @@ type SpreadJSLicense struct {
 
 func (s *SpreadJSLicense) Output(writer io.Writer) error {
 	bytes, err := json.Marshal(s)
+	ss := fmt.Sprintf("E%s#%s", s.Data.Id, s.sep)
+
 	encoded := encode(bytes)
 	if err != nil {
 		return err
 	}
 	if len(encoded) > 0 {
+		_, err = writer.Write([]byte(ss))
 		_, err = writer.Write(encoded)
 	}
 	return err
 }
 
-func (s *SpreadJSLicense) Read(lic, sep, prefix string) *SpreadJSLicense {
-	if prefix == "" {
-		prefix = "E"
+func (s *SpreadJSLicense) Read(lic string) *SpreadJSLicense {
+	if s.prefix == "" {
+		s.prefix = "E"
 	}
-	regStr := fmt.Sprintf("(%s)(%s)#(%s)(%s)", prefix, ".*", sep, ".*")
+	regStr := fmt.Sprintf("(%s)(%s)#(%s)(%s)", s.prefix, ".*", s.sep, ".*")
 	all := regexp.MustCompile(regStr).FindStringSubmatch(lic)
 	s.Data.Id = all[2]
 	licData := all[4]
@@ -68,8 +72,10 @@ func (s *SpreadJSLicense) Read(lic, sep, prefix string) *SpreadJSLicense {
 	return s
 }
 
-func NewSpreadJSLicense() SpreadJSLicense {
-	return SpreadJSLicense{
+func NewSpreadJSLicense() *SpreadJSLicense {
+	return &SpreadJSLicense{
+		prefix:    "E",
+		sep:       "B1",
 		R:         1332046125,
 		H:         "24AC5981",
 		Signature: "N++NtKxSFV4lGqBTqdu2D94fbq/BuExoKTHFOWS0R6X28SaPAak29Y7chZPlHcD/owaQy1kU4dT3gI281yta1tpIxrKgNXYrLazMw4wTceDyKGSHXrm7csAltd3YTxJu/wLXJZS6ZABjQ7W0jF5skv8ZndxwgeDjuATtOVPvv3v3qSAxRlK9uKKpyaRZ+cJwZ2fuv56vHBLq5KyJAAO2E2tm8kx1bggegCc2Kh8yTvIq2kCWma2dSFoZowPDlWd8bhQrFT5N2eyhyuxD3oB3W4lD3iLkc/r0pxcK8gb2Xrv+aCE6rsTe4QQD/DSoYWI0tR7NvWXXhyOZVIsv2lBTjQ==",
