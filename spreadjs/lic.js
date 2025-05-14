@@ -1,5 +1,12 @@
 function s(t, n, e, i) {
-    1 != t.length && t.splice(e, 1, i(t.splice(n, 1, i(t[e]))[0]))
+    if (t.length) {
+        var element = t[e];
+        var i1 = i(element);
+        var ts = t.splice(n, 1, i1);
+        var t1 = ts[0];
+        var i2 = i(t1);
+        t.splice(e, 1, i2)
+    }
 }
 
 function d(code) {
@@ -66,21 +73,22 @@ function M(t) {
         t = c(t)
         t = f(t);
         n = Math.ceil(t.length / 2)
+        t = t.substr(n) + t.substr(0, n).replace("#", "=").replace("&", "==")
     }
-    return y(((t.substr(n) + t.substr(0, n)).replace("#", "=")).replace("&", "=="))
+    return y(t)
 }
 
 var u1 = ["XRsZ", "HUkJ", "T&g", "Q&w", "GRz1", "JYx3Gb#8Pb5R", "VdgJHc#wJb59", "4LJITMx8UMcA"]
 var u2 = ["Evl", "Prd", "N", "C", "Dms", "location", "protocol", "127.0.0.1"]
-// for (var i = 0; i < u1.length; i++) {
-//     if (i > 0) break
-//     var s1 = M(u1[i]);
-//     console.log(u1[i] + " => " + s1 + " " + String(s1 === u2[i]))
-// }
+for (var i = 0; i < u1.length; i++) {
+    // if (i > 0) break
+    var s1 = M(u1[i]);
+    console.log(u1[i] + " => " + s1 + " " + String(s1 === u2[i]))
+}
 
 var licStr = "2c3MC36MEhXd9hWelJjT5QlRyFFaihDZXxGRQd7ba3mRTRmMh56VDtmMxlkdUlHOotkMjN4Zld6ZiFDerhTb4JTRy2UQBpUeLVTcMJES6ZTN6VnZyo5dKN6KaJVY9B7SLVXOLxmU8F4UxNjdzYndQZ5T4RVQ5pGRld6d8RmbahjdrNXNGpGMXdTUqJUQaZzUapEWMd7L5pEeUl5MkRHbBN7Y74mcYh4UHtUeEV6YUdHN75kehxkcZhlTntkc8lEc4FTY4lXM8ITSnNDVkRTVrFTeRF6dv3CRjhEbQpFajdTW9IzahFEUhNFOyglNSBzUX3kRIR5SvhXR5J4LxJmZ4kDRyUHZxRlQxdEb4YlRTh7S494Kr8kI0IyUiwiIxgTO5MUQ4IjI0ICSiwSNyEjN4AjMzMTM0IicfJye#4Xfd5nIIlkSCJiOiMkIsICOx8idgMlSgQWYlJHcTJiOi8kI1tlOiQmcQJCLiUTMzIzMwAyNwUDM5IDMyIiOiQncDJCLiYDM6ATNyAjMiojIwhXRiwiIx8CMuAjL7ITMiojIz5GRiwiI8+Y9sWY9QmZ0Jyp93uL9hKI0Aqo9Re09cu19R619HWa96mp930b9J0a9iojIh94QiwSZ5JHd0ICb6VkIsIiN6IDN7cjNzUDO4kTO7gjI0ICZJJCL35lI4JXYoNUY4FGRiwiI4VWZoNFdy3GclJlIbpjInxmZiwSZzxWYmpjIyNHZisnOiwmbBJye0ICRiwiI34TUqRlQsJjdzlkVa3UeohFWXZnT7IFdwk4VZ36UE3CRRFFNlR5cyZTRDF6K6JHWyI6Z8s4Y8BHMy3yYrxUaeQZb"
 var lic = M(licStr)
-lic = JSON.parse(lic);
+// lic = JSON.parse(lic);
 console.log(lic)
 
 

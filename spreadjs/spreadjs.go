@@ -2,86 +2,84 @@ package main
 
 import (
 	"encoding/base64"
-	"fmt"
-	"net/url"
 	"strings"
 	"unicode"
 )
 
-func s(t []rune, n, e int, i func(rune) rune) {
-	if len(t) != 1 {
-		t[e] = i(t[n])
-		t[n] = t[e]
+func swap(runes []rune, start, end int, change func(rune) rune) {
+	if len(runes) > 1 {
+		tmp := change(runes[start])
+		runes[start] = change(runes[end])
+		runes[end] = tmp
 	}
 }
 
-func d(code int) rune {
-	return rune(code)
+// swapCaseAndShiftDigit 处理单个字符：
+// - 交换字母大小写（大写→小写，小写→大写）
+// - 对数字进行循环移位（如 '5'+1 → '6'，'9'+1 → '0'）
+// - 其他字符保持不变
+func swapCaseAndShiftDigit(r rune, n int) rune {
+	// 处理字母大小写转换
+	if unicode.IsUpper(r) {
+		return unicode.ToLower(r)
+	}
+
+	if unicode.IsLower(r) {
+		return unicode.ToUpper(r)
+	}
+
+	// 处理数字移位
+	if unicode.IsDigit(r) {
+		// 将数字字符转换为0-9的数值
+		digitValue := int(r - '0')
+		// 执行移位操作，确保结果在0-9范围内
+		newDigit := (digitValue + 10 + n) % 10
+		// 转回rune类型的数字字符
+		return rune('0' + newDigit)
+	}
+
+	// 非字母和数字保持不变
+	return r
 }
 
-func u(t rune, n int) rune {
-	e := int(t)
-	if 65 <= e && e <= 90 {
-		return unicode.ToLower(t)
-	} else if 97 <= e && e <= 122 {
-		return unicode.ToUpper(t)
-	} else if 48 <= e && e <= 57 {
-		return d(48 + (e-48+10+n)%10)
-	} else {
-		return t
+func cipher(s string) string {
+	runes := []rune(s)
+	change := func(r rune) rune {
+		return swapCaseAndShiftDigit(r, -1)
 	}
+	for i := len(runes) - 5; i >= 0; i-- {
+		swap(runes, i+1, i+3, change)
+		swap(runes, i, i+2, change)
+	}
+	return string(runes)
 }
 
-func c(t string) string {
-	n := []rune(t)
-	e := func(t rune) rune {
-		return u(t, -1)
-	}
-	for i := len(n) - 5; i >= 0; i-- {
-		s(n, i+1, i+3, e)
-		s(n, i, i+2, e)
-	}
-	return string(n)
-}
-
-func f(t string) string {
-	n := []rune(t)
+func reverse(s string) string {
+	n := []rune(s)
 	for i, j := 0, len(n)-1; i < j; i, j = i+1, j-1 {
 		n[i], n[j] = n[j], n[i]
 	}
 	return string(n)
 }
 
-func m(t string) string {
+func base64Decode(t string) []byte {
 	decoded, _ := base64.StdEncoding.DecodeString(t)
-	return string(decoded)
-}
-
-func y(t string) string {
-	t = m(t)
-	var res strings.Builder
-	for _, r := range t {
-		s := fmt.Sprintf("%%%02X", r)
-		res.WriteString(s)
-	}
-	decoded, _ := url.QueryUnescape(res.String())
 	return decoded
 }
 
-func M(t string) string {
-	if t != "" {
-		t = f(c(t))
-		n := len(t) / 2
-		t = t[n:] + t[:n]
-		t = strings.Replace(t, "#", "=", 1)
-		t = strings.Replace(t, "&", "==", 1)
-		return y(t)
+func decode(encryptedText string) []byte {
+	var result string
+	if encryptedText != "" {
+		result = cipher(encryptedText)
+		result = reverse(result)
+		l := (len(result) + 1) / 2
+		result = result[l:] + result[:l]
+		result = strings.Replace(result, "#", "=", 1)
+		result = strings.Replace(result, "&", "==", 1)
 	}
-	return ""
+	return base64Decode(result)
 }
 
-type SpreadJSLicense struct {
-	R         int    `json:"_r"`
-	H         string `json:"H"`
-	Signature string `json:"S"`
+func encode(data []byte) []byte {
+	return nil
 }
