@@ -1,0 +1,9 @@
+{
+  "name": "spreadjs",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "start": "node lic.js"
+  },
+  "private": true
+}
