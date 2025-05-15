@@ -92,3 +92,46 @@ var lic = M(licStr)
 console.log(lic)
 
 
+function A(t) {
+    var n, e, i, r, o, a;
+    n = 0
+    e = 5381
+    i = 0
+    for (r = t.length - 1; 0 <= r; r--) {
+        o = t.charCodeAt(r)
+        e = o + ((e << 5) + e)
+        n = o + (n << 6) + (n << 16) - n
+        i = o + ((i << 5) - i)
+        i &= i
+        a = n ^ e ^ i
+
+    }
+    if (a < 0) {
+        a = ~a
+    }
+    res = a.toString(16).toUpperCase()
+    return [a, res]
+}
+
+// 615274881    24AC5981
+//
+var vl1 = 'E879948536774266#B1{"Anl":{"dsr":false,"flg":["ReportSheet","DataChart"]},"Id":"879948536774266","Evl":true,"CNa":"安徽晶奇网络科技股份有限公司","Dms":"127.0.0.1","Exp":"20250606","Crt":"20250507 032315","Prd":[{"N":"Spread JS v.18","C":"BJIH"}]}'
+idx = vl1.indexOf("徽")
+var vl2 = vl1.substring(0, idx)
+var res = A(vl1)
+console.log(res)
+
+// 签名密钥
+var pK = "l6/zrbWoSbcLFwEetFh38rH3ErBZE9H+Cqix3R+wTlfA1wD5B+lUcCQn+EJ60I4RGrm0x1sFjkiLWwB0jAn6BWZv0W4WbqAKriOdeoivxDp1Wmjs3qkEDhvbsjPtfvwx2BHil6o+/tDrdMJQSGs18WZm2PoQLQuL+9VhZ4FNRHUQU3Jtioke/OZEGHJOdYVwvCGalzBad6QFOiVbDBQPePpS3++GJzOxN8SN/7lyS5/IdKiy3WJRaVGkB370+HbN6hKraDfUgReLX26yxRaKC/5aWnGAJ2NnWLoGyAGRcwT9dVjo4bcAZNrrA0U9JVKQxaSskhdv2p49XzJkltXx5w=="
+function x(t) {
+    return t.replace(/\+/g, "-").replace(/\//g, "_").replace(/\=+$/, "")
+}
+var  n = x(pK)
+var sn = {
+    "alg": "PS256",
+    "e": "AQAB",
+    "kty": "RSA",
+    "n": n
+}
+
+console.log(sn)
