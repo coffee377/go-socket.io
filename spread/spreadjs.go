@@ -1,4 +1,4 @@
-package main
+package spread
 
 import (
 	"encoding/base64"
@@ -107,7 +107,7 @@ func encode(data []byte) []byte {
 	return []byte(encoded)
 }
 
-func A(t string) (int, string) {
+func hexHash(t string) string {
 	var n, e, i, a int32
 	n = 0
 	e = 5381
@@ -140,6 +140,5 @@ func A(t string) (int, string) {
 	}
 
 	// 转换为大写十六进制字符串
-	res := strings.ToUpper(fmt.Sprintf("%x", a))
-	return int(a), res
+	return strings.ToUpper(fmt.Sprintf("%x", a))
 }

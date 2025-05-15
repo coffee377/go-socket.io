@@ -1,8 +1,10 @@
-package main
+package spread
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/stretchr/testify/assert"
+	"strconv"
 	"testing"
 )
 
@@ -17,21 +19,23 @@ func Test_decode(t *testing.T) {
 
 func Test_encode(t *testing.T) {
 	sjs := NewSpreadJSLicense()
+	sjs.Read(lic)
+
 	buf := &bytes.Buffer{}
 	err := sjs.Output(buf)
 	assert.Nil(t, err)
 	assert.Equal(t, lic, buf.String())
 
 	buf.Reset()
-	sjs.HexHash = "49B4E07C"
-	sjs.Data.Evaluation = false
-	sjs.Data.Expiration = "20260101"
-	sjs.Data.Domains = "127.0.0.1,10.1.40.93"
+	data := sjs.GetData()
+	data.Evaluation = false
+	data.Expiration = "20260101"
+	data.Domains = "127.0.0.1,10.1.40.93"
 	err = sjs.Output(buf)
 	assert.Nil(t, err)
 	sjs2 := sjs.Read(buf.String())
 	assert.Equal(t, sjs, sjs2)
-	assert.Equal(t, false, sjs2.Data.Evaluation)
+	assert.Equal(t, false, data.Evaluation)
 	println(buf.String())
 }
 
@@ -67,8 +71,10 @@ func Test_swapCaseAndOffsetDigit(t *testing.T) {
 
 func Test_hexLic(t *testing.T) {
 	// 615274881    24AC5981
-	var raw = `E879948536774266#B1{"Anl":{"dsr":false,"flg":["ReportSheet","DataChart"]},"Id":"879948536774266","Evl":true,"CNa":"安徽晶奇网络科技股份有限公司","Dms":"127.0.0.1","Exp":"20250606","Crt":"20250507 032315","Prd":[{"N":"Spread JS v.18","C":"BJIH"}]}`
-	d, h := A(raw)
-	assert.Equal(t, 615274881, d)
-	assert.Equal(t, "24AC5981", h)
+	raw := `E879948536774266#B1{"Anl":{"dsr":false,"flg":["ReportSheet","DataChart"]},"Id":"879948536774266","Evl":true,"CNa":"安徽晶奇网络科技股份有限公司","Dms":"127.0.0.1","Exp":"20250606","Crt":"20250507 032315","Prd":[{"N":"Spread JS v.18","C":"BJIH"}]}`
+	hash := hexHash(raw)
+	num, err := strconv.ParseInt(fmt.Sprintf("0x%s", hash), 0, 64)
+	assert.Nil(t, err)
+	assert.Equal(t, "24AC5981", hash)
+	assert.Equal(t, 615274881, int(num))
 }
