@@ -5,23 +5,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"regexp"
+	"strings"
 	"time"
 )
 
-// Output(writer io.Writer) error // 输出授权文件
-
 type License interface {
-	//GetSeparator() string // 分隔符
-	//GetPrefix() string    // 前缀
 	GetData() *Data // 授权数据
 
-	R() int          //
-	Sign() string    // 签名
+	R() int          // todo 目前不清楚如何生成
+	Sign() string    // 签名 todo 目前不清楚如何生成
 	HexHash() string // 十六进制哈希
 
-	Read(lic string) License // 读取解析授权文件
-	// ReadFromFile(file os.File) License // 从文件读取解析授权文件
+	Read(lic string) License           // 读取解析授权文件
+	ReadFromFile(file os.File) License // 从文件读取解析授权文件
 
 	PrefixGenerate(data Data) string // 生成前缀
 	Output(writer io.Writer) error   // 输出授权文件
@@ -30,13 +28,19 @@ type License interface {
 	json.Unmarshaler
 }
 
+type PrefixGen = func(data Data) string
+
 type options struct {
-	sep       string
-	createdAt time.Time     // 创建时间
-	duration  time.Duration // 有效时长
-	domains   []string      // 域名
-	ips       []string      // IP
-	prefixFn  func(data Data) string
+	major       int           // 主版本号
+	sep         string        // 分隔符
+	createdAt   time.Time     // 创建时间
+	duration    time.Duration // 有效时长
+	domains     []string      // 域名
+	ips         []string      // IP
+	prefixFn    PrefixGen     // 前缀生成函数
+	trial       bool          // 是否为试用版
+	plugins     int           // 插件编码数字和
+	description string        // 描述
 }
 
 type license struct {
@@ -57,14 +61,6 @@ type jsonLic struct {
 	S string `json:"S,omitempty"`  // S 签名
 	D Data   `json:"D,omitempty"`  // D 授权数据
 }
-
-//func (l *license) GetSeparator() string {
-//	return l.sep
-//}
-//
-//func (l *license) GetPrefix() string {
-//	return l.prefix
-//}
 
 func (l *license) GetData() *Data {
 	return l.data
@@ -91,6 +87,11 @@ func (l *license) Read(lic string) License {
 	bData := decode(l.licData)
 	_ = json.Unmarshal(bData, l)
 	// 显式类型转换（可选）
+	return l
+}
+
+func (l *license) ReadFromFile(file os.File) License {
+	// todo 实现从文件读取
 	return l
 }
 
@@ -149,16 +150,70 @@ func (l *license) Output(writer io.Writer) error {
 	return err
 }
 
+func (l *license) verify() {
+	h := l.HexHash()
+	if l.hash != h {
+		l.hash = h
+	}
+	//l.signature = l.Sign()
+	// todo 计算签名
+	//l.signature = ""
+}
+
+func (l *license) build() {
+	opts := l.opts
+	var products []*Product
+
+	if ps, ok := prods[opts.major]; ok {
+		for _, p := range ps {
+			if p.designer == false {
+				products = append(products, p)
+				break
+			}
+		}
+	}
+
+	designer := int(PluginDesigner)
+	if (opts.plugins & designer) == designer {
+		if ps, ok := prods[opts.major]; ok {
+			for _, p := range ps {
+				if p.designer == true {
+					products = append(products, p)
+					break
+				}
+			}
+		}
+	}
+	createdAt := opts.createdAt.Format("20060102 150405")
+	expiration := opts.createdAt.Add(opts.duration).Format("20060102")
+	l.data = &Data{
+		Annual:     &Annual{opts.trial, PluginsFrom(opts.plugins)},
+		Id:         fmt.Sprintf("%d", opts.createdAt.Unix()),
+		Evaluation: !opts.trial,
+		//CNa:        opts.company,
+		Domains: strings.Join(opts.domains, ","),
+		//Ips:        strings.Join(opts.ips, ","),
+		Expiration: expiration,
+		CreateTime: createdAt,
+		Products:   products,
+	}
+
+	//l.prefix = fmt.Sprintf("%s", l.PrefixGenerate(*l.data))
+	//byt, _ := json.Marshal(l)
+	//l.licData = string(encode(byt))
+}
+
 type Options func(opts *options)
 
 func NewSpreadJSLicense(opts ...Options) License {
-	o := &options{sep: "B1"}
+	now := time.Now()
+	o := &options{sep: "B1", trial: true, major: 18, createdAt: now, duration: time.Hour * 24 * 30}
 	for _, opt := range opts {
 		opt(o)
 	}
-	return &license{
-		opts: *o,
-	}
+	lic := &license{opts: *o}
+	lic.build()
+	return lic
 	//annual := &Annual{false, []string{"ReportSheet", "DataChart"}}
 	//products := &[]Product{
 	//	{"Spread JS v.18", "BJIH"},
@@ -177,4 +232,81 @@ func NewSpreadJSLicense(opts ...Options) License {
 	//		products,
 	//	},
 	//}
+}
+
+func WithSeparator(sep string) Options {
+	return func(opts *options) {
+		if sep != "" {
+			opts.sep = sep
+		}
+	}
+}
+
+// WithCreateTime 时间格式 YYYY-MM-DD HH:MM
+func WithCreateTime(timeString string) Options {
+	return func(opts *options) {
+		if timeString != "" {
+			if t, err := time.Parse("2006-01-02 15:04", timeString); err == nil {
+				opts.createdAt = t
+				return
+			}
+		}
+		opts.createdAt = time.Now()
+	}
+}
+
+// WithDeadline 24h30m60s
+func WithDeadline(duration string) Options {
+	return func(opts *options) {
+		if duration != "" {
+			if d, err := time.ParseDuration(strings.ToLower(duration)); err == nil {
+				opts.duration = d
+				return
+			}
+		}
+		opts.duration = time.Hour * 24 * 30
+	}
+}
+
+func WithDomain(domain ...string) Options {
+	return func(opts *options) {
+		//if len(domain) == 0 {
+		//	opts.domains = []string{"127.0.0.1"}
+		//}
+		opts.domains = append(opts.domains, domain...)
+		//opts.deadline = duration
+	}
+}
+
+func WithIP(ip ...string) Options {
+	return func(opts *options) {
+		opts.ips = append(opts.ips, ip...)
+		//opts.deadline = duration
+	}
+}
+
+func WithPrefix(gen PrefixGen) Options {
+	return func(opts *options) {
+		if gen != nil {
+			opts.prefixFn = gen
+		}
+	}
+}
+
+func WithoutTrial() Options {
+	return func(opts *options) {
+		opts.trial = false
+	}
+}
+
+func WithPlugin(mask int) Options {
+	return func(opts *options) {
+		opts.plugins = mask
+	}
+}
+
+func WithDesigner() Options {
+	return func(opts *options) {
+		opts.plugins = opts.plugins | int(PluginDesigner)
+	}
 }
