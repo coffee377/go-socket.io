@@ -18,7 +18,7 @@ var prods = map[int][]*Product{
 type Data struct {
 	Annual     *Annual    `json:"Anl,omitempty"` // 授权信息
 	Id         string     `json:"Id,omitempty"`  // 授权标识
-	Evaluation bool       `json:"Evl,omitempty"` // 是否为评估使用版
+	Evaluation bool       `json:"Evl"`           // 是否为评估使用版
 	CNa        string     `json:"CNa,omitempty"` // 客户名称
 	Domains    string     `json:"Dms,omitempty"` // 域名
 	Ips        string     `json:"Ips,omitempty"` // IP 地址
@@ -33,34 +33,37 @@ type Annual struct {
 }
 
 // Plugin 在线表格编辑器 Designer
-// 报表 / ReportSheet
 // 数据透视表 / PivotTable
-// 集算表 / TableSheet
+// 报表 / ReportSheet
 // 甘特图 / GanttSheet
+// 集算表 / TableSheet
 // 数据图表 / DataChart
+
 type Plugin int
 
 const (
 	PluginDesigner    Plugin = 1 << 0
-	PluginReportSheet Plugin = 1 << 1
-	PluginPivotTable  Plugin = 1 << 2
-	PluginTableSheet  Plugin = 1 << 3
-	PluginGanttSheet  Plugin = 1 << 4
+	PluginPivotTable  Plugin = 1 << 1
+	PluginReportSheet Plugin = 1 << 2
+	PluginGanttSheet  Plugin = 1 << 3
+	PluginTableSheet  Plugin = 1 << 4
+	PluginDataChart   Plugin = 1 << 5
 )
 
 func (p Plugin) String() string {
 	switch p {
 	case PluginDesigner:
 		return "Designer"
-	case PluginReportSheet:
-		return "ReportSheet"
 	case PluginPivotTable:
 		return "PivotTable"
-	case PluginTableSheet:
-		return "TableSheet"
+	case PluginReportSheet:
+		return "ReportSheet"
 	case PluginGanttSheet:
 		return "GanttSheet"
-
+	case PluginTableSheet:
+		return "TableSheet"
+	case PluginDataChart:
+		return "DataChart"
 	}
 	return fmt.Sprintf("%d", p)
 }
@@ -69,8 +72,9 @@ func PluginsFrom(mask int) []string {
 	plugins := make([]Plugin, 0)
 	add(&plugins, mask, PluginReportSheet)
 	add(&plugins, mask, PluginPivotTable)
-	add(&plugins, mask, PluginTableSheet)
 	add(&plugins, mask, PluginGanttSheet)
+	add(&plugins, mask, PluginTableSheet)
+	add(&plugins, mask, PluginDataChart)
 	result := make([]string, len(plugins))
 	for i, plugin := range plugins {
 		result[i] = plugin.String()

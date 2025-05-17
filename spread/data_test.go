@@ -80,22 +80,22 @@ func TestDesignerLic(t *testing.T) {
 	data := sjs.GetData()
 	assert.Equal(t, "designer/0.0.0.0", data.Domains)
 
-	//sjs.Read(designerFullLic)
-	//data.Products = prods[18]
-	//assert.Equal(t, 2, len(data.Products))
-	//assert.Equal(t, "BJIH", data.Products[0].Code)
-	//assert.Equal(t, "33Y9", data.Products[1].Code)
-	//_ = sjs.Output(os.Stdout)
+	sjs.Read(designerFullLic)
+	data.Products = prods[18]
+	assert.Equal(t, 2, len(data.Products))
+	assert.Equal(t, "BJIH", data.Products[0].Code)
+	assert.Equal(t, "33Y9", data.Products[1].Code)
+	_ = sjs.Output(os.Stdout)
 }
 
 func TestInternal(t *testing.T) {
-	//Please provide valid license key.
-	GcSpreadSheetsLicenseKey := "GrapeCity-Internal-Use-Only,E835481965572883#B17eYICbuFkI1pjIEJCLi4TPn96M7dVY7dWVkVTUMpGMoJzbWVEd8pFMT3UT7ZUSws6KElWamVXdDhDdplnZ8J5aTRmb626bvF5QNN6TH3UbkR5ao9EU8JnYvMVUShWVpdUR8dDO0JTZiNFWYplSDRlY9Nlc9lVYjNWWxRFUv4Ua6pGelNnNiR5NKVVZ8ITTRB5bZ9kVR9kdIhUaaJ7dJdnRshXcxoVbhxkeaJ4ZHFjY7dUaxUFeVZ6duVWWyRnYlVUbXp4Vy9EO9AlRKlXYGtGT9YnMtNXNKNTcud7LWJzNyIEZzwUckR6NzwUSxNmSycVWyRjULxETzMDTrh5U7k5Kn3md5FzYRdkV954V42UW9dDT5UndoZDSWRFTYJnbXVXSvs4QLhWMRp6TxgUYkV4R79EcIF4bzhDVLBzLGNjN6IHW8llTslkMLREay86SDJVexdWRHlWe896ZVhzZ5cmZjhEZVN6YiojITJCLiIzMGZTM8EkI0ICSiwyMwIDM6cDMzITM0IicfJye#4Xfd5nIIlkSCJiOiMkIsICOx8idgMlSgQWYlJHcTJiOi8kI1tlOiQmcQJCLiYzMxQTNwAiMwITM4IDMyIiOiQncDJCLiI7au26YukHdpNWZwFmcn9iKs46bj9yc5l6YzVWbuoCLytmLvNmLzVXajNXZt9iKsAnau26YukHdpNWZwFmcn9iKs46bj9Se4l6YlBXYydmLqwSbvNmL6VGZ9RXajVGchJ7ZuoCLw3GduMXdpN6cl5mLqwCcq9yc5l6YzVWbuoCLwpmLvNmLzVXajNXZt9iKs2WauMXdpN6cl5mLqwibj9SbvNmL9RXajVGchJ7ZuoCLzVnLzVXajNXZt9iKiojIz5GRiwiIzx6bvRlclB7bsVmdlRkI0ISYONkIsUWdyRnOiwmdFJCLiMDO8IzN5UjN9EDO4UzM8IiOiQWSiwSfdJCdyFGaDFGdhRkIsICdlVGaTRHduF6RiwiI4VWZoNFdy3GclJlIsISZsJWYUR7b6lGUislOicGbmJCLlNHbhZmOiIKc6J"
-	GcSpreadSheetsDesignerLicenseKey := "GrapeCity-Internal-Use-Only,E395773961976736#B1JpMIyNHZisnOiwmbBJye0ICRiwiI34zdrJHd0t6SRN6NNBVM9UmZaB7dOV6TvJjUvcXdapXQD3WW0FGUoRUNwwkVWxkaD36RXlFbVxWb8kVekZjM0tWY0d5U4ZUZZh5c48GRMlWbNh7b8QHZrp7T7MmS9plMLVlSqBTePBzcLJzdxQXQl3SN9FmYBhHUO9UbT3SM9QVTQxGOlpmbU3GTYdGThFUaEpHNPFVSkJXdDVjaMVTQ7JkS4k4NaZ6LwljS7QUe5wUeH5WWpF7Yv5UN0NlQ7cDZJFXe4FkMTBnNClXQ89UZwlka8VVNntWOy5mTppnSEZGe4VWb4UVYLVHaQF4Q5g5dkRkYvl4U5hUZJB5S8cTNmlVWlBlSOJFRhdmTUdHVEtUUzpFNThUQEVlQHFGZ5MGOtlDb8sUd0R5axY5T8Y5YL3CeotGZ8t4b9lXVFZnU9dTbycjQTNVdxBDWSxWWVJmczI7RHd6bklkI0IyUiwiI5QEOwUDN6EjI0ICSiwSM6EDOxITOwkTM0IicfJye#4Xfd5nI9k5MzIiOiMkIsICOx8idg86bkRWQtIXZudWazVGRtMlSkFWZyB7UiojIOJyebpjIkJHUiwiIzAzN4UDMgIDMyEDNyAjMiojI4J7QiwiIw3GduMXdpN6cl5mLqwicr9ybj9Se4l6YlBXYydmLqwCcq9ybj9Se4l6YlBXYydmLqwCcq9ybj9yc5l6YzVWbuoCLuNmLt36YukHdpNWZwFmcn9iKs46bj9idlRWe4l6YlBXYydmLqwyc59yc5l6YzVWbuoCLt36YuMXdpN6cl5mLqwybp9yc5l6YzVWbuoCLwpmLzVXajNXZt9iKs46bj9Se4l6YlBXYydmLqwicr9ybj9yc5l6YzVWbuoiI0IyctRkIsIycs36bUJXZw3GblZXZEJiOiEmTDJCLlVnc4pjIsZXRiwiI6MzN6cTOxYTOzczN5kzMiojIklkIs4XXiQnchh6QhRXYEJCLiQXZlh6U4RnbhdkIsICdlVGaTRncvBXZSJCLiUGbiFGV43mdpBlIbpjInxmZiwSZwxZY"
+	l1 := ReadLicense(GcSpreadSheetsLicenseKey)
+	l2 := ReadLicense(GcSpreadSheetsDesignerLicenseKey)
 
-	sjs := NewSpreadJSLicense()
+	_ = l1.Output(os.Stdout)
+	println()
 
-	sjs.Read(GcSpreadSheetsLicenseKey)
+	_ = l2.Output(os.Stdout)
+	println()
 
-	sjs.Read(GcSpreadSheetsDesignerLicenseKey)
 }
